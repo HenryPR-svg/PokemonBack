@@ -1,0 +1,59 @@
+/* ===============================
+   Variables CSS globales
+   =============================== */
+:root{
+  --brand:#3b4cca;   /* Color principal (azul Pokémon Bank) */
+  --accent:#ffcb05;  /* Color de acento (amarillo Pokémon Bank) */
+}
+
+/* ===============================
+   Barra de navegación
+   =============================== */
+.navbar{ 
+  background: var(--brand); /* Fondo de la navbar usando el color principal */
+}
+
+/* ===============================
+   Cabecera de las tarjetas
+   =============================== */
+.card-header{ 
+  background:#f9fbff; /* Fondo muy claro en la cabecera de cada card */
+  font-weight:600;    /* Texto un poco más grueso para resaltar el título */
+}
+
+/* ===============================
+   Vista Login (separación vertical)
+   =============================== */
+#view-login{ 
+  margin-top: 8vh; /* Empuja el login hacia abajo 8% del alto de la ventana */
+}
+
+/* ===============================
+   Saldo principal (texto grande)
+   =============================== */
+.display-4{ 
+  font-size: 2.5rem;      /* Tamaño de fuente grande para mostrar saldo */
+  color: var(--brand);    /* Color del texto igual al color principal */
+}
+
+/* ===============================
+   Tabla del historial
+   =============================== */
+.table td, .table th{ 
+  vertical-align: middle; /* Centra verticalmente el contenido de celdas y cabeceras */
+}
+
+/* ===============================
+   Botón principal
+   =============================== */
+.btn-primary{ 
+  background: var(--brand);   /* Fondo del botón usando color principal */
+  border-color: var(--brand); /* Borde del mismo color */
+}
+
+/* ===============================
+   Efecto hover en botón principal
+   =============================== */
+.btn-primary:hover{ 
+  filter: brightness(0.95);   /* Al pasar el mouse oscurece un poco para dar feedback */
+}

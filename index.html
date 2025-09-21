@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>PokemonBack | ATM</title>
+
+  <!-- Ícono de la aplicación -->
+  <link rel="icon" href="Imagenes/logo0.svg"/>
+
+  <!-- Bootstrap 4 para diseño responsive -->
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"/>
+  <link rel="stylesheet" href="styles.css"/>
+
+  <!-- Librerías externas -->
+  <!-- SweetAlert para alertas -->
+  <script defer src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+  <!-- ValidateJS (lo usamos solo para validar montos) -->
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/validate.js/0.13.1/validate.min.js"></script>
+  <!-- Chart.js para gráficos -->
+  <script defer src="https://cdn.jsdelivr.net/npm/chart.js@2.9.4/dist/Chart.min.js"></script>
+  <!-- jsPDF para generar PDF -->
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <!-- Script de la aplicación -->
+  <script defer src="app.js"></script>
+</head>
+<body class="bg-light">
+
+  <!-- Barra de navegación superior -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <a class="navbar-brand d-flex align-items-center" href="#">
+      <img src="assets/logo.svg" height="34" class="mr-2" alt="logo"/>
+      <span>PokemonBack</span>
+    </a>
+    <div class="ml-auto small text-white-50">
+      <span id="navUser"></span> <!-- Aquí mostramos nombre del usuario logueado -->
+    </div>
+  </nav>
+
+  <main class="container py-4">
+    <!-- ======================= VISTA DE LOGIN ======================= -->
+    <section id="view-login" class="card shadow-lg mx-auto" style="max-width: 420px;">
+      <div class="card-body p-4">
+        <h5 class="card-title text-center mb-3">Acceso por PIN</h5>
+        <p class="text-muted small text-center mb-4">Ingrese su PIN de 4 dígitos para acceder.</p>
+
+        <!-- Formulario de login -->
+        <form id="loginForm" novalidate>
+          <div class="form-group">
+            <label for="pin">PIN</label>
+            <input type="password" class="form-control form-control-lg text-center" id="pin" maxlength="4" placeholder="••••" required/>
+            <div class="invalid-feedback">El PIN debe contener exactamente 4 dígitos.</div>
+          </div>
+          <button class="btn btn-primary btn-block btn-lg" type="submit">Ingresar</button>
+        </form>
+      </div>
+    </section>
+
+    <section id="view-dashboard" class="d-none">
+      <div class="row">
+        <!-- Tarjeta con datos del usuario y saldo actual -->
+        <div class="col-md-8 mb-3">
+          <div class="card shadow-sm">
+            <div class="card-body d-flex justify-content-between align-items-center">
+              <div>
+                <h5 class="mb-1">Bienvenido, <span id="ownerName"></span></h5>
+                <div class="text-muted small">Cuenta: <span id="accountNumber"></span></div>
+              </div>
+              <div class="display-4 mb-0"><span id="balance">0.00</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Botones de salir y PDF -->
+        <div class="col-md-4 mb-3">
+          <div class="card shadow-sm">
+            <div class="card-body">
+              <button class="btn btn-outline-secondary btn-block mb-2" id="btnLogout">Salir</button>
+              <button class="btn btn-outline-info btn-block" id="btnDownloadStatement">Descargar estado (PDF)</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <!-- Formulario de transacciones -->
+        <div class="col-lg-6 mb-3">
+          <div class="card shadow-sm h-100">
+            <div class="card-header">Acciones</div>
+            <div class="card-body">
+              <form id="actionForm" class="mb-3" novalidate>
+                <div class="form-row">
+                  <!-- Tipo de transacción -->
+                  <div class="form-group col-sm-6">
+                    <label for="actionType">Transacción</label>
+                    <select id="actionType" class="form-control">
+                      <option value="deposit">Depositar</option>
+                      <option value="withdraw">Retirar</option>
+                      <option value="bill">Pagar servicio</option>
+                      <option value="check">Consultar saldo</option>
+                    </select>
+                  </div>
+                  <!-- Servicios disponibles (solo aparece si es “Pagar servicio”) -->
+                  <div class="form-group col-sm-6 d-none" id="serviceGroup">
+                    <label for="serviceType">Servicio</label>
+                    <select id="serviceType" class="form-control">
+                      <option value="energia">Energía eléctrica</option>
+                      <option value="internet">Internet</option>
+                      <option value="telefonia">Telefonía</option>
+                      <option value="agua">Agua potable</option>
+                    </select>
+                  </div>
+                </div>
+                <!-- Monto de la operación -->
+                <div class="form-group" id="amountGroup">
+                  <label for="amount">Monto</label>
+                  <input type="number" min="1" step="0.01" class="form-control" id="amount" placeholder="0.00"/>
+                  <div class="invalid-feedback">Ingrese un monto válido mayor a 0.</div>
+                </div>
+                <button class="btn btn-primary" type="submit">Ejecutar</button>
+              </form>
+              <div class="alert alert-info mb-0 small">
+                 Las transacciones se guardan en <strong>localStorage</strong> para fines de demostración.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Gráfico de transacciones -->
+        <div class="col-lg-6 mb-3">
+          <div class="card shadow-sm h-100">
+            <div class="card-header">Gráfico de transacciones</div>
+            <div class="card-body">
+              <canvas id="txChart" height="220"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Historial de transacciones -->
+      <div class="card shadow-sm mt-3">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <span>Historial</span>
+          <button id="btnClearHistory" class="btn btn-sm btn-outline-danger">Limpiar</button>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead class="thead-light">
+              <tr>
+                <th>Fecha</th>
+                <th>Tipo</th>
+                <th>Detalle</th>
+                <th class="text-right">Monto</th>
+                <th class="text-right">Saldo</th>
+              </tr>
+            </thead>
+            <tbody id="historyBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  <!-- Pie de página -->
+  <footer class="text-center text-muted small py-4">
+    DAW901 · PokemonBack 
+  </footer>
+
+  <!-- Scripts de Bootstrap -->
+  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>
