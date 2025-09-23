@@ -184,6 +184,26 @@ function init(){
     });
   });
 
+  /* BOTÓN Descargar estado de Cuenta (PDF) */
+  el("#btnDownloadStatement").addEventListener("click", ()=>{
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    doc.setFontSize(16);
+    doc.text("Estado de Cuenta - PokemonBank", 20, 20);
+    doc.setFontSize(12);
+    doc.text(`Titular: ${USER.owner}`, 20, 30);
+    doc.text(`Cuenta: ${USER.account}`, 20, 37);
+    doc.text(`Saldo actual: ${fmt(state.balance)}`, 20, 44);
+    doc.text("Historial de transacciones:", 20, 54);
+    let y = 62;
+    state.tx.slice(0, 20).forEach((t, i) => {
+      doc.text(`${i+1}. ${t.date} | ${labelType(t.type)} | ${t.detail || "-"} | ${fmt(t.amount)} | ${fmt(t.balance)}` , 20, y);
+      y += 7;
+      if(y > 270) { doc.addPage(); y = 20; }
+    });
+    doc.save("EstadoCuenta_PokemonBank.pdf");
+  });
+
   /* Mostrar/ocultar campos según tipo de transacción */
   const actionType = el("#actionType");
   const serviceGroup = el("#serviceGroup");
