@@ -168,10 +168,20 @@ function init(){
 
   /* BOTÓN Salir (Logout) */
   el("#btnLogout").addEventListener("click", ()=>{
-    state.logged = false;
-    save();
-    renderNavUser();
-    show("login");
+    swal({
+      title: "¿Está seguro de que desea salir?",
+      text: "Se cerrará la sesión actual.",
+      icon: "warning",
+      buttons: ["Cancelar", "Sí, salir"],
+      dangerMode: true
+    }).then(ok => {
+      if(ok){
+        state.logged = false;
+        save();
+        renderNavUser();
+        show("login");
+      }
+    });
   });
 
   /* Mostrar/ocultar campos según tipo de transacción */
@@ -205,9 +215,11 @@ function init(){
     if(type === "deposit"){
       state.balance += amount;
       addTx("deposit", "Depósito en ventanilla ATM", amount);
+      // Al hacer un depósito exitoso
       swal("Depósito exitoso", `Nuevo saldo: ${fmt(state.balance)}`, "success");
     }else if(type === "withdraw"){
       if(amount > state.balance){
+        // Al intentar retirar más del saldo disponible
         swal("Fondos insuficientes", "No puede retirar más del saldo disponible.", "warning");
         return;
       }
