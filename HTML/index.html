@@ -3,14 +3,14 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>PokemonBack | ATM</title>
+  <title>PokemonBank | ATM</title>
 
   <!-- Ícono de la aplicación -->
-  <link rel="icon" href="Imagenes/logo0.svg"/>
+  <link rel="icon" href="IMG/logo0.svg"/>
 
   <!-- Bootstrap 4 para diseño responsive -->
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"/>
-  <link rel="stylesheet" href="styles.css"/>
+  <link rel="stylesheet" href="CSS/styles.css"/>
 
   <!-- Librerías externas -->
   <!-- SweetAlert para alertas -->
@@ -23,15 +23,15 @@
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
   <!-- Script de la aplicación -->
-  <script defer src="app.js"></script>
+  <script defer src="../JS/app.js"></script>
 </head>
 <body class="bg-light">
 
   <!-- Barra de navegación superior -->
   <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
     <a class="navbar-brand d-flex align-items-center" href="#">
-      <img src="assets/logo.svg" height="34" class="mr-2" alt="logo"/>
-      <span>PokemonBack</span>
+      <img src="../IMG/logo.svg" height="34" class="mr-2" alt="logo"/>
+      <span>PokemonBank</span>
     </a>
     <div class="ml-auto small text-white-50">
       <span id="navUser"></span> <!-- Aquí mostramos nombre del usuario logueado -->
@@ -120,9 +120,9 @@
                 </div>
                 <button class="btn btn-primary" type="submit">Ejecutar</button>
               </form>
-              <div class="alert alert-info mb-0 small">
+              <!-- <div class="alert alert-info mb-0 small">
                  Las transacciones se guardan en <strong>localStorage</strong> para fines de demostración.
-              </div>
+              </div> -->
             </div>
           </div>
         </div>
