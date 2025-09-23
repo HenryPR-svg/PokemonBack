@@ -246,43 +246,7 @@ function init(){
       }
     });
   });
-
-  /* Botón Descargar estado en PDF */
-  el("#btnDownloadStatement").addEventListener("click", ()=>{
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF({unit:"pt"});
-    let y = 40;
-    doc.setFont("helvetica","bold");
-    doc.setFontSize(16);
-    doc.text("PokemonBack - Estado de Cuenta", 40, y);
-    y += 20;
-    doc.setFont("helvetica","");
-    doc.setFontSize(11);
-    doc.text(`Cliente: ${USER.owner}`, 40, y); y+=16;
-    doc.text(`Cuenta: ${USER.account}`, 40, y); y+=24;
-    doc.text(`Saldo actual: ${fmt(state.balance)}`, 40, y); y+=24;
-    doc.text("Historial:", 40, y); y+=18;
-    const head = ["Fecha","Tipo","Detalle","Monto","Saldo"];
-    let rows = state.tx.slice(0, 20).map(t => [
-      t.date, labelType(t.type), t.detail || "-", `${(t.type==="withdraw"||t.type==="bill")?"-":""}${fmt(t.amount)}`, fmt(t.balance)
-    ]);
-    // Dibujar tabla en el PDF
-    doc.setFontSize(9);
-    const colX = [40, 150, 230, 430, 500];
-    doc.text(head[0], colX[0], y); doc.text(head[1], colX[1], y); doc.text(head[2], colX[2], y); doc.text(head[3], colX[3], y); doc.text(head[4], colX[4], y);
-    y += 12;
-    rows.forEach(r=>{
-      if(y > 760){ doc.addPage(); y = 40; }
-      doc.text(String(r[0]), colX[0], y);
-      doc.text(String(r[1]), colX[1], y);
-      doc.text(String(r[2]).slice(0,28), colX[2], y);
-      doc.text(String(r[3]), colX[3], y, {align:"right"});
-      doc.text(String(r[4]), colX[4], y, {align:"right"});
-      y += 12;
-    });
-    doc.save("estado_cuenta.pdf");
-  });
-
+  
   /* Estado inicial (si ya estaba logueado */
   if(state.logged){ show("dash"); } else { show("login"); }
   renderNavUser();
