@@ -1,290 +1,360 @@
-/* Usuario de demostración */
+// app.js — PokemonBank (Etapa 2)
+// -------------------------------------------------------------
+// Datos del usuario de demostración (se inicializan en cliente)
 const USER = {
-  pin: "2025",                 // PIN de acceso
-  owner: "Henry Peña",         // Nombre del dueño de la cuenta
-  account: "001-234-567",       // Número de cuenta
-  balance: 1500.00              // Saldo inicial
+  pin: "1234",                     // PIN DEMO (mantengo 1111 como me pediste)
+  owner: "Ash Ketchum",
+  account: "0987654321",
+  balance: 500.00                  // Saldo inicial $500.00
 };
 
-/* Función para seleccionar elementos del DOM rápidamente */
-const el = sel => document.querySelector(sel);
+// -------------------------------------------------------------
+// Utilidades rápidas
+const el  = (sel) => document.querySelector(sel);
+const fmt = (n) => Number(n).toLocaleString("en-US", { style:"currency", currency:"USD" });
 
-/* Función para formatear los números como moneda en dólares USD */
-const fmt = n => n.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
-
-/* Estado de la aplicación (saldo, transacciones, login) */
+// Estado de la app (se persiste en localStorage)
 let state = {
   logged: false,
   balance: USER.balance,
-  tx: [] // cada transacción: {fecha, tipo, detalle, monto, saldo}
+  tx: [] // {date, type, detail, amount, balance}
 };
 
-/* Guardar el estado en localStorage */
-const KEY = "pokemonback-demo";
-function save(){
-  localStorage.setItem(KEY, JSON.stringify(state));
-}
-/* Cargar el estado desde localStorage */
+// Clave de almacenamiento
+const KEY = "pokemonbank-app-v2";
+
+// Guardar / Cargar en localStorage
+function save(){ localStorage.setItem(KEY, JSON.stringify(state)); }
 function load(){
-  const s = localStorage.getItem(KEY);
-  if(s){
-    try{ state = JSON.parse(s); }catch(e){}
-  } else {
+  const raw = localStorage.getItem(KEY);
+  if(raw){
+    try{ state = JSON.parse(raw); }catch(_){}
+  }else{
     save();
   }
 }
 
-/* Mostrar nombre y cuenta en la barra superior */
+// -------------------------------------------------------------
+// Render de textos de cabecera / navegación
 function renderNavUser(){
-  el("#navUser").textContent = state.logged ? `${USER.owner} · ${USER.account}` : "";
+  el("#navUser") && (el("#navUser").textContent = state.logged ? `${USER.owner} · ${USER.account}` : "");
 }
-
-/* Mostrar u ocultar vistas */
-function show(view){
-  el("#view-login").classList.add("d-none");
-  el("#view-dashboard").classList.add("d-none");
-  if(view==="login") el("#view-login").classList.remove("d-none");
-  if(view==="dash") el("#view-dashboard").classList.remove("d-none");
-}
-
-/* Mostrar los datos del usuario y saldo en la cabecera */
 function renderHeader(){
-  el("#ownerName").textContent = USER.owner;
-  el("#accountNumber").textContent = USER.account;
-  el("#balance").textContent = fmt(state.balance);
+  el("#ownerName")      && (el("#ownerName").textContent      = USER.owner);
+  el("#accountNumber")  && (el("#accountNumber").textContent  = USER.account);
+  el("#balance")        && (el("#balance").textContent        = fmt(state.balance));
 }
 
-/* Agregar una transacción al historial */
+// Mostrar vistas
+function show(view){
+  const login = el("#view-login");
+  const dash  = el("#view-dashboard");
+  if(login) login.classList.add("d-none");
+  if(dash)  dash.classList.add("d-none");
+  if(view==="login" && login) login.classList.remove("d-none");
+  if(view==="dash"  && dash ) dash.classList.remove("d-none");
+}
+
+// -------------------------------------------------------------
+// Historial
+function labelType(t){
+  return ({
+    deposit : "Depósito",
+    withdraw: "Retiro",
+    bill    : "Pago servicio",
+    check   : "Consulta"
+  }[t] || t);
+}
+
 function addTx(type, detail, amount){
   const tx = {
-    date: new Date().toLocaleString("es-SV"),
-    type, detail,
-    amount: Number(amount),
+    date   : new Date().toLocaleString("es-SV"),
+    type,
+    detail: detail || "-",
+    amount: Number(amount) || 0,
     balance: state.balance
   };
-  state.tx.unshift(tx); // insertar al inicio
+  state.tx.unshift(tx);
   save();
   renderHistory();
   updateChart();
 }
 
-/* Tabla de historial de transacciones */
 function renderHistory(){
   const tbody = el("#historyBody");
+  if(!tbody) return;
   tbody.innerHTML = state.tx.map(t => `
     <tr>
       <td>${t.date}</td>
       <td>${labelType(t.type)}</td>
-      <td>${t.detail || "-"}</td>
-      <td class="text-right">${(t.type==="withdraw"||t.type==="bill")?"-":""}${fmt(t.amount)}</td>
+      <td>${t.detail}</td>
+      <td class="text-right">${(t.type==="withdraw"||t.type==="bill")? "-" : ""}${fmt(t.amount)}</td>
       <td class="text-right">${fmt(t.balance)}</td>
     </tr>
   `).join("");
 }
 
-/* Etiquetas para los tipos de transacción */
-function labelType(t){
-  return {
-    deposit: "Depósito",
-    withdraw: "Retiro",
-    check: "Consulta",
-    bill: "Pago servicio"
-  }[t] || t;
-}
-
-/* Inicializar el gráfico con Chart.js */
+// -------------------------------------------------------------
+// Gráfico (Chart.js)
 let chart;
 function initChart(){
-  const ctx = document.getElementById("txChart").getContext("2d");
+  const canvas = document.getElementById("txChart");
+  if(!canvas) return;
+  const ctx = canvas.getContext("2d");
   chart = new Chart(ctx, {
     type: "doughnut",
     data: {
       labels: ["Depósitos","Retiros","Pagos","Consultas"],
       datasets: [{
         data: [0,0,0,0],
-        // Colores personalizados para cada tipo de transacción
-        backgroundColor: [
-          "#28a745", // verde para Depósitos
-          "#dc3545", // rojo para Retiros
-          "#007bff", // azul para Pagos
-          "#ffc107"  // amarillo para Consultas
-        ],
-        borderColor: "#ffffff", // borde blanco entre sectores
-        borderWidth: 2
+        // Colores sugeridos: verde, rojo, azul, amarillo
+        backgroundColor: ["#28a745","#dc3545","#007bff","#ffc107"]
       }]
     },
     options: {
-      legend: { position: "bottom" }
+      legend: { position: "bottom" },
+      animation: { duration: 300 }
     }
   });
   updateChart();
 }
 
-
-/* Actualizar datos del gráfico según historial */
 function updateChart(){
+  if(!chart) return;
   const counts = {deposit:0, withdraw:0, bill:0, check:0};
-  state.tx.forEach(t => counts[t.type] = (counts[t.type]||0) + 1);
+  state.tx.forEach(t => counts[t.type] = (counts[t.type] || 0) + 1);
   chart.data.datasets[0].data = [counts.deposit, counts.withdraw, counts.bill, counts.check];
   chart.update();
 }
 
-/* Reglas de validación solo para montos (usamos ValidateJS para montos) */
-const amountConstraints = { presence: {allowEmpty:false}, numericality: {greaterThan: 0} };
+// -------------------------------------------------------------
+// Validaciones (Validate.js)
+const amountConstraints = { presence: {allowEmpty:false}, numericality: { greaterThan: 0 } };
+const pinConstraints    = { presence: true, format: { pattern: "^\\d{4}$", message: "debe tener 4 dígitos" } };
 
-/* Función principal: inicializa eventos y renderiza todo */
+// -------------------------------------------------------------
+// Inicialización principal
 function init(){
+  // Cargar estado previo
   load();
+
+  // Pintar textos iniciales
   renderNavUser();
   renderHeader();
   renderHistory();
   initChart();
 
-  /* LOGIN — validación manual del PIN */
-  el("#loginForm").addEventListener("submit", (e)=>{
-    e.preventDefault();
-    const pin = el("#pin").value.trim();
+  // -------------------------
+  // LOGIN (limpia el PIN si es incorrecto)
+  const loginForm = el("#loginForm");
+  if(loginForm){
+    loginForm.addEventListener("submit", (e)=>{
+      e.preventDefault();
+      const pinInput = el("#pin");
+      const pin = (pinInput.value || "").trim();
 
-    // Comprobamos que tenga 4 dígitos numéricos
-    if(!/^\d{4}$/.test(pin)){
-      el("#pin").classList.add("is-invalid");
-      return;
-    }
-    el("#pin").classList.remove("is-invalid");
-
-    // Verificar PIN correcto
-    if(pin !== USER.pin){
-      swal("PIN incorrecto", "Intenta nuevamente.", "error");
-      return;
-    }
-
-    // Si es correcto, mostrar dashboard
-    state.logged = true;
-    save();
-    renderNavUser();
-    show("dash");
-    renderHeader();
-  });
-
-  /* BOTÓN Salir (Logout) */
-  el("#btnLogout").addEventListener("click", ()=>{
-    swal({
-      title: "¿Está seguro de que desea salir?",
-      text: "Se cerrará la sesión actual.",
-      icon: "warning",
-      buttons: ["Cancelar", "Sí, salir"],
-      dangerMode: true
-    }).then(ok => {
-      if(ok){
-        state.logged = false;
-        save();
-        renderNavUser();
-        show("login");
-      }
-    });
-  });
-
-  /* BOTÓN Descargar estado de Cuenta (PDF) */
-  el("#btnDownloadStatement").addEventListener("click", ()=>{
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-    doc.setFontSize(16);
-    doc.text("Estado de Cuenta - PokemonBank", 20, 20);
-    doc.setFontSize(12);
-    doc.text(`Titular: ${USER.owner}`, 20, 30);
-    doc.text(`Cuenta: ${USER.account}`, 20, 37);
-    doc.text(`Saldo actual: ${fmt(state.balance)}`, 20, 44);
-    doc.text("Historial de transacciones:", 20, 54);
-    let y = 62;
-    state.tx.slice(0, 20).forEach((t, i) => {
-      doc.text(`${i+1}. ${t.date} | ${labelType(t.type)} | ${t.detail || "-"} | ${fmt(t.amount)} | ${fmt(t.balance)}` , 20, y);
-      y += 7;
-      if(y > 270) { doc.addPage(); y = 20; }
-    });
-    doc.save("EstadoCuenta_PokemonBank.pdf");
-  });
-
-  /* Mostrar/ocultar campos según tipo de transacción */
-  const actionType = el("#actionType");
-  const serviceGroup = el("#serviceGroup");
-  const amountGroup = el("#amountGroup");
-  actionType.addEventListener("change", ()=>{
-    const v = actionType.value;
-    serviceGroup.classList.toggle("d-none", v !== "bill");
-    amountGroup.classList.toggle("d-none", v === "check");
-  });
-
-  /* Ejecutar transacciones */
-  el("#actionForm").addEventListener("submit", (e)=>{
-    e.preventDefault();
-    const type = actionType.value;
-    const amount = parseFloat(el("#amount").value);
-    const service = el("#serviceType").value;
-
-    // Validar monto solo cuando no sea consulta
-    if(type !== "check"){
-      const err = validate({amount}, {amount: amountConstraints});
+      const err = validate({pin}, {pin: pinConstraints});
       if(err){
-        el("#amount").classList.add("is-invalid");
+        pinInput.classList.add("is-invalid");
+        pinInput.focus();
         return;
       }
-      el("#amount").classList.remove("is-invalid");
-    }
 
-    // Lógica de cada transacción
-    if(type === "deposit"){
-      state.balance += amount;
-      addTx("deposit", "Depósito en ventanilla ATM", amount);
-      // Al hacer un depósito exitoso
-      swal("Depósito exitoso", `Nuevo saldo: ${fmt(state.balance)}`, "success");
-    }else if(type === "withdraw"){
-      if(amount > state.balance){
-        // Al intentar retirar más del saldo disponible
-        swal("Fondos insuficientes", "No puede retirar más del saldo disponible.", "warning");
+      if(pin !== USER.pin){
+        swal("PIN incorrecto", "Intenta nuevamente.", "error").then(()=>{
+          pinInput.value = "";
+          pinInput.classList.add("is-invalid");
+          pinInput.focus();
+        });
         return;
       }
-      state.balance -= amount;
-      addTx("withdraw", "Retiro en efectivo", amount);
-      swal("Retiro realizado", `Nuevo saldo: ${fmt(state.balance)}`, "success");
-    }else if(type === "bill"){
-      if(amount > state.balance){
-        swal("Fondos insuficientes", "No puede pagar más del saldo disponible.", "warning");
-        return;
-      }
-      state.balance -= amount;
-      addTx("bill", `Pago de ${service}`, amount);
-      swal("Pago realizado", `Se pagó ${service}. Saldo: ${fmt(state.balance)}`, "success");
-    }else if(type === "check"){
-      addTx("check", "Consulta de saldo", 0);
-      swal("Saldo actual", `${fmt(state.balance)}`, "info");
-    }
-    renderHeader();
-  });
 
-  /* Botón Limpiar historial */
-  el("#btnClearHistory").addEventListener("click", ()=>{
-    swal({
-      title: "¿Limpiar historial?",
-      text: "Esta acción no se puede deshacer.",
-      icon: "warning",
-      buttons: ["Cancelar","Sí, borrar"],
-      dangerMode: true
-    }).then(ok=>{
-      if(ok){
-        state.tx = [];
-        save();
-        renderHistory();
-        updateChart();
-      }
+      // Éxito
+      state.logged = true;
+      save();
+      renderNavUser();
+      show("dash");
     });
-  });
-  
-  /* Estado inicial (si ya estaba logueado */
+
+    // Quitar estado inválido al escribir
+    el("#pin") && el("#pin").addEventListener("input", ()=>{
+      el("#pin").classList.remove("is-invalid");
+    });
+  }
+
+  // -------------------------
+  // LOGOUT
+  const btnLogout = el("#btnLogout");
+  if(btnLogout){
+    btnLogout.addEventListener("click", ()=>{
+      swal({
+        title: "¿Cerrar sesión?",
+        text: "Tu sesión actual se cerrará.",
+        icon: "warning",
+        buttons: ["Cancelar","Sí, salir"]
+      }).then(ok=>{
+        if(ok){
+          state.logged = false;
+          save();
+          renderNavUser();
+          show("login");
+          const pinInput = el("#pin");
+          if(pinInput){ pinInput.value = ""; pinInput.focus(); }
+        }
+      });
+    });
+  }
+
+  // -------------------------
+  // FORM DE ACCIONES
+  const actionForm   = el("#actionForm");
+  const actionType   = el("#actionType");
+  const serviceGroup = el("#serviceGroup");
+  const amountGroup  = el("#amountGroup");
+  const amountInput  = el("#amount");
+  const serviceSel   = el("#serviceType");
+
+  if(actionType){
+    actionType.addEventListener("change", ()=>{
+      const v = actionType.value;
+      // Mostrar selector de servicio solo para "bill"
+      serviceGroup && serviceGroup.classList.toggle("d-none", v !== "bill");
+      // Ocultar monto para "check"
+      amountGroup  && amountGroup.classList.toggle("d-none", v === "check");
+    });
+    // Forzar estado inicial correcto
+    actionType.dispatchEvent(new Event("change"));
+  }
+
+  if(actionForm){
+    actionForm.addEventListener("submit", (e)=>{
+      e.preventDefault();
+
+      const type    = actionType.value;
+      const service = serviceSel ? serviceSel.value : "";
+      const amount  = parseFloat(amountInput.value);
+
+      // Validar monto cuando aplique
+      if(type !== "check"){
+        const vErr = validate({amount}, {amount: amountConstraints});
+        if(vErr){
+          amountInput.classList.add("is-invalid");
+          return;
+        }
+        amountInput.classList.remove("is-invalid");
+      }
+
+      // Lógica de cada transacción
+      if(type === "deposit"){
+        state.balance += amount;
+        addTx("deposit", "Depósito en ventanilla ATM", amount);
+        swal("Depósito exitoso", `Nuevo saldo: ${fmt(state.balance)}`, "success");
+
+      }else if(type === "withdraw"){
+        if(amount > state.balance){
+          swal("Fondos insuficientes", "No puede retirar más del saldo disponible.", "warning");
+          return;
+        }
+        state.balance -= amount;
+        addTx("withdraw", "Retiro en efectivo", amount);
+        swal("Retiro realizado", `Nuevo saldo: ${fmt(state.balance)}`, "success");
+
+      }else if(type === "bill"){
+        if(amount > state.balance){
+          swal("Fondos insuficientes", "No puede pagar más del saldo disponible.", "warning");
+          return;
+        }
+        state.balance -= amount;
+        addTx("bill", `Pago de ${service}`, amount);
+        swal("Pago realizado", `Se pagó ${service}. Saldo: ${fmt(state.balance)}`, "success");
+
+      }else if(type === "check"){
+        addTx("check", "Consulta de saldo", 0);
+        swal("Saldo actual", `${fmt(state.balance)}`, "info");
+      }
+
+      renderHeader();
+      save();
+      // Limpiar monto tras operar
+      if(type !== "check"){ amountInput.value = ""; }
+    });
+  }
+
+  // -------------------------
+  // LIMPIAR HISTORIAL
+  const btnClear = el("#btnClearHistory");
+  if(btnClear){
+    btnClear.addEventListener("click", ()=>{
+      swal({
+        title: "¿Limpiar historial?",
+        text: "Esta acción no se puede deshacer.",
+        icon: "warning",
+        buttons: ["Cancelar","Sí, borrar"],
+        dangerMode: true
+      }).then(ok=>{
+        if(ok){
+          state.tx = [];
+          save();
+          renderHistory();
+          updateChart();
+        }
+      });
+    });
+  }
+
+  // -------------------------
+  // PDF (jsPDF) — comprobante/estado de cuenta
+  const btnPdf = el("#btnDownloadStatement");
+  if(btnPdf){
+    btnPdf.addEventListener("click", ()=>{
+      const { jsPDF } = window.jspdf || {};
+      if(!jsPDF){
+        swal("jsPDF no cargó", "Verifica la CDN de jsPDF en index.html", "error");
+        return;
+      }
+      const doc = new jsPDF({unit:"pt"});
+      let y = 40;
+
+      // Encabezado
+      doc.setFont("helvetica","bold"); doc.setFontSize(16);
+      doc.text("PokemonBank - Estado de Cuenta", 40, y); y += 22;
+
+      doc.setFont("helvetica",""); doc.setFontSize(11);
+      doc.text(`Cliente: ${USER.owner}`, 40, y); y += 16;
+      doc.text(`Cuenta: ${USER.account}`, 40, y); y += 16;
+      doc.text(`Saldo actual: ${fmt(state.balance)}`, 40, y); y += 22;
+
+      // Tabla simple
+      doc.setFontSize(12);
+      doc.text("Historial (últimas 20):", 40, y); y += 16;
+
+      const head = ["Fecha","Tipo","Detalle","Monto","Saldo"];
+      const colX = [40, 170, 250, 430, 520];
+
+      doc.setFontSize(10);
+      head.forEach((h, i)=> doc.text(h, colX[i], y));
+      y += 12;
+
+      state.tx.slice(0, 20).forEach(row=>{
+        if(y > 760){ doc.addPage(); y = 40; }
+        const monto = (row.type==="withdraw"||row.type==="bill")? `-${fmt(row.amount)}` : fmt(row.amount);
+        doc.text(String(row.date),  colX[0], y);
+        doc.text(labelType(row.type), colX[1], y);
+        doc.text(String(row.detail || "-").slice(0,34), colX[2], y);
+        doc.text(String(monto),  colX[3], y, {align:"right"});
+        doc.text(String(fmt(row.balance)), colX[4], y, {align:"right"});
+        y += 12;
+      });
+
+      doc.save("estado_cuenta.pdf");
+    });
+  }
+
+  // -------------------------
+  // Vista inicial
   if(state.logged){ show("dash"); } else { show("login"); }
   renderNavUser();
-  // Forzar cambio para mostrar u ocultar campos del formulario
-  actionType && actionType.dispatchEvent(new Event("change"));
 }
 
-/* Ejecutar la inicialización cuando el DOM esté listo */
+// Listo: disparar init cuando cargue el DOM
 document.addEventListener("DOMContentLoaded", init);
